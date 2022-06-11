@@ -27,7 +27,7 @@ func (s *cashierService) ChangeMoney(ctx context.Context, req models.ChangeMoney
 		return res, err
 	}
 
-	changeMoney := req.Cash - req.ProductPrice
+	changeMoney := req.Payment - req.ProductPrice
 	if changeMoney == 0 {
 		return res, nil
 	}
