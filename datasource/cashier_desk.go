@@ -45,18 +45,17 @@ var valueMapToIndex = map[float64]cashPointer{
 }
 
 func New() CashierDesk {
-	tmp := getBankCoins()
-	if !isDataValid(tmp) {
+	d := &desk{}
+	d.loadData()
+
+	if !d.isDataValid() {
 		panic("data is corrupted")
 	}
-	log.Debugf("tmp: %v", tmp)
-	return &desk{
-		BankCoins: tmp,
-	}
+	return d
 }
 
-func getBankCoins() []models.CashValue {
-	bankCoinsDefault := make([]models.CashValue, 0, 9)
+func (d *desk) loadData() {
+	bankCoinsDefault := make([]models.CashValue, 0, len(valueMapToIndex))
 
 	file, err := os.Open(dataPath)
 	if err != nil {
@@ -89,10 +88,10 @@ func getBankCoins() []models.CashValue {
 			bankCoinsDefault = append(bankCoinsDefault, models.CashValue{value, amount})
 		}
 	}
-	return bankCoinsDefault
+	d.BankCoins = bankCoinsDefault
 }
 
-func isDataValid(data []models.CashValue) bool {
+func (d *desk) isDataValid() bool {
 	defer func() {
 		// Data is invalid and some row is missing that will lead to pacic
 		if r := recover(); r != nil {
@@ -101,8 +100,8 @@ func isDataValid(data []models.CashValue) bool {
 	}()
 
 	for key, pointer := range valueMapToIndex {
-		if data[pointer.index].Value != key {
-			log.Warnf("data is not valid, got data value %v and key %v", data[pointer.index].Value, key)
+		if d.BankCoins[pointer.index].Value != key {
+			log.Warnf("data is not valid, got data value %v and key %v", d.BankCoins[pointer.index].Value, key)
 			return false
 		}
 	}
@@ -116,7 +115,7 @@ func (d *desk) CalculateChange(change float64) ([]models.CashValue, error) {
 	tmpBankCoins := make([]models.CashValue, len(d.BankCoins))
 	copy(tmpBankCoins, d.BankCoins)
 
-	changes := make([]models.CashValue, 0, 9)
+	changes := make([]models.CashValue, 0, len(valueMapToIndex))
 	remaining := change
 
 	for i, bc := range tmpBankCoins {
