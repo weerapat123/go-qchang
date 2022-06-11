@@ -14,9 +14,9 @@ import (
 )
 
 type CashierDesk interface {
-	FillMoneyIn(value float64, amount int) error
+	TransferMoneyIn(value float64, amount int) error
 	CalculateChange(change float64) ([]models.CashValue, error)
-	TakeMoneyOut(value float64, amount int) error
+	TransferMoneyOut(value float64, amount int) error
 	BackUpData() error
 }
 
@@ -144,22 +144,30 @@ func (d *desk) CalculateChange(change float64) ([]models.CashValue, error) {
 	return changes, nil
 }
 
-func (d *desk) FillMoneyIn(value float64, amount int) error {
-	index := valueMapToIndex[value].index
-	if (d.BankCoins[index].Amount + amount) > valueMapToIndex[value].limit {
+func (d *desk) TransferMoneyIn(value float64, amount int) error {
+	pointer, ok := valueMapToIndex[value]
+	if !ok {
+		return fmt.Errorf("no bank/coin of %v", value)
+	}
+
+	if (d.BankCoins[pointer.index].Amount + amount) > pointer.limit {
 		return fmt.Errorf("amount bank/coin of %v is at limit", value)
 	}
 
-	d.BankCoins[index].Amount += amount
+	d.BankCoins[pointer.index].Amount += amount
 	return nil
 }
 
-func (d *desk) TakeMoneyOut(value float64, amount int) error {
-	index := valueMapToIndex[value].index
-	if (d.BankCoins[index].Amount - amount) < 0 {
+func (d *desk) TransferMoneyOut(value float64, amount int) error {
+	pointer, ok := valueMapToIndex[value]
+	if !ok {
+		return fmt.Errorf("no bank/coin of %v", value)
+	}
+
+	if (d.BankCoins[pointer.index].Amount - amount) < 0 {
 		return fmt.Errorf("current amount of bank/coin of %v is not enough", value)
 	}
-	d.BankCoins[index].Amount -= amount
+	d.BankCoins[pointer.index].Amount -= amount
 	return nil
 }
 
