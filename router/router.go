@@ -35,6 +35,8 @@ func New() *echo.Echo {
 	})
 
 	e.POST("/cashier/make_change", handler.ChangeMoney)
+	e.POST("/cashier/transfer_in", handler.TransferMoneyIn)
+	e.POST("/cashier/transfer_out", handler.TransferMoneyOut)
 
 	return e
 }

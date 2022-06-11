@@ -4,8 +4,8 @@ import "github.com/go-playground/validator/v10"
 
 type (
 	CashValue struct {
-		Value  float64 `json:"value"`
-		Amount int     `json:"amount"`
+		Value  float64 `json:"value" validate:"required"`
+		Amount int     `json:"amount" validate:"required"`
 	}
 
 	ChangeMoneyRequest struct {
@@ -19,7 +19,7 @@ type (
 	}
 
 	TransferMoneyRequest struct {
-		BankCoins []CashValue `json:"bank_coins"`
+		BankCoins []CashValue `json:"bank_coins" validate:"min=1,dive"`
 	}
 )
 
@@ -27,6 +27,10 @@ var (
 	v = validator.New()
 )
 
-func (c ChangeMoneyRequest) Validate() error {
-	return v.Struct(c)
+func (req ChangeMoneyRequest) Validate() error {
+	return v.Struct(req)
+}
+
+func (req TransferMoneyRequest) Validate() error {
+	return v.Struct(req)
 }
