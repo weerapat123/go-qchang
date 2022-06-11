@@ -9,11 +9,12 @@ type (
 	}
 
 	ChangeMoneyRequest struct {
-		ChangeNeeded float64 `json:"change_needed" validate:"gt=0"`
+		ProductPrice float64 `json:"product_price" validate:"gt=0"`
+		Cash         float64 `json:"cash" validate:"gtefield=ProductPrice"`
 	}
 
 	ChangeMoneyResponse struct {
-		Changes []CashValue `json:"changes"`
+		ChangeMoney []CashValue `json:"change_money"`
 	}
 )
 

@@ -4,6 +4,8 @@ import (
 	"context"
 	"go-qchang/datasource"
 	"go-qchang/models"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type CashierService interface {
@@ -19,17 +21,24 @@ func NewCashierService(desk datasource.CashierDesk) CashierService {
 }
 
 func (s *cashierService) ChangeMoney(ctx context.Context, req models.ChangeMoneyRequest) (models.ChangeMoneyResponse, error) {
-	res := models.ChangeMoneyResponse{}
+	res := models.ChangeMoneyResponse{ChangeMoney: make([]models.CashValue, 0)}
 	if err := req.Validate(); err != nil {
+		log.Errorf("validate request failed, got error: %v", err)
 		return res, err
 	}
 
-	changes, err := s.desk.CalculateChange(req.ChangeNeeded)
+	changeMoney := req.Cash - req.ProductPrice
+	if changeMoney == 0 {
+		return res, nil
+	}
+
+	calculatedChangeMoney, err := s.desk.CalculateChange(changeMoney)
 	if err != nil {
+		log.Errorf("calculate change failed, got error: %v", err)
 		return res, err
 	}
 
-	res.Changes = changes
+	res.ChangeMoney = calculatedChangeMoney
 
 	return res, nil
 }

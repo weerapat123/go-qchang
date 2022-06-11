@@ -8,7 +8,16 @@ import (
 	"os"
 	"os/signal"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
+
+func init() {
+	log.SetLevel(log.DebugLevel)
+	log.SetFormatter(&log.JSONFormatter{
+		TimestampFormat: time.RFC3339Nano,
+	})
+}
 
 func main() {
 	port := flag.String("port", "8080", "service port number")
