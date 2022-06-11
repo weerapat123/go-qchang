@@ -14,7 +14,8 @@ type (
 	}
 
 	ChangeMoneyResponse struct {
-		ChangeMoney []CashValue `json:"change_money"`
+		ChangeMoney float64     `json:"change_money"`
+		Changes     []CashValue `json:"changes"`
 	}
 )
 

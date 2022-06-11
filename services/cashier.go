@@ -21,7 +21,7 @@ func NewCashierService(desk datasource.CashierDesk) CashierService {
 }
 
 func (s *cashierService) ChangeMoney(ctx context.Context, req models.ChangeMoneyRequest) (models.ChangeMoneyResponse, error) {
-	res := models.ChangeMoneyResponse{ChangeMoney: make([]models.CashValue, 0)}
+	res := models.ChangeMoneyResponse{}
 	if err := req.Validate(); err != nil {
 		log.Errorf("validate request failed, got error: %v", err)
 		return res, err
@@ -32,13 +32,14 @@ func (s *cashierService) ChangeMoney(ctx context.Context, req models.ChangeMoney
 		return res, nil
 	}
 
-	calculatedChangeMoney, err := s.desk.CalculateChange(changeMoney)
+	res.ChangeMoney = changeMoney
+
+	calculatedChanges, err := s.desk.CalculateChange(changeMoney)
 	if err != nil {
 		log.Errorf("calculate change failed, got error: %v", err)
 		return res, err
 	}
 
-	res.ChangeMoney = calculatedChangeMoney
-
+	res.Changes = calculatedChanges
 	return res, nil
 }
