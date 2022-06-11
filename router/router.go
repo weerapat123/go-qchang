@@ -1,6 +1,7 @@
 package router
 
 import (
+	"go-qchang/batch"
 	"go-qchang/datasource"
 	"go-qchang/handlers"
 	"go-qchang/services"
@@ -19,13 +20,14 @@ func New() *echo.Echo {
 	desk := datasource.New()
 	service := services.NewCashierService(desk)
 	handler := handlers.NewCashierHandler(service)
+	batch.New(desk)
 
-	e.Use(middleware.Logger())
+	// e.Use(middleware.Logger())
 	e.Use(middleware.Secure())
-	e.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
-		c.Logger().Debugf("request: %s", reqBody)
-		c.Logger().Debugf("response: %s", resBody)
-	}))
+	// e.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
+	// 	c.Logger().Debugf("request: %s", reqBody)
+	// 	c.Logger().Debugf("response: %s", resBody)
+	// }))
 	e.Use(middleware.Recover())
 
 	e.GET("/ping", func(c echo.Context) error {

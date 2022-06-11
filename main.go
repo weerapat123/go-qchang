@@ -26,6 +26,7 @@ func main() {
 	e := router.New()
 
 	go func() {
+		e.Logger.Info("starting the server")
 		if err := e.Start(fmt.Sprint(":", *port)); err != nil {
 			e.Logger.Info("shutting down the server")
 		}

@@ -49,6 +49,7 @@ func New() CashierDesk {
 	if !isDataValid(tmp) {
 		panic("data is corrupted")
 	}
+	log.Debugf("tmp: %v", tmp)
 	return &desk{
 		BankCoins: tmp,
 	}
@@ -76,15 +77,17 @@ func getBankCoins() []models.CashValue {
 			panic(err)
 		}
 
-		value, err := strconv.ParseFloat(record[0], 64)
-		if err != nil {
-			panic(err)
+		if len(record) == 2 {
+			value, err := strconv.ParseFloat(record[0], 64)
+			if err != nil {
+				panic(err)
+			}
+			amount, err := strconv.Atoi(record[1])
+			if err != nil {
+				panic(err)
+			}
+			bankCoinsDefault = append(bankCoinsDefault, models.CashValue{value, amount})
 		}
-		amount, err := strconv.Atoi(record[1])
-		if err != nil {
-			panic(err)
-		}
-		bankCoinsDefault = append(bankCoinsDefault, models.CashValue{value, amount})
 	}
 	return bankCoinsDefault
 }
@@ -141,10 +144,14 @@ func (d *desk) CalculateChange(change float64) ([]models.CashValue, error) {
 	}
 
 	d.BankCoins = tmpBankCoins
+	log.Debugf("BankCoins: %v", d.BankCoins)
 	return changes, nil
 }
 
 func (d *desk) TransferMoneyIn(value float64, amount int) error {
+	d.Lock()
+	defer d.Unlock()
+
 	pointer, ok := valueMapToIndex[value]
 	if !ok {
 		return fmt.Errorf("no bank/coin of %v", value)
@@ -155,10 +162,14 @@ func (d *desk) TransferMoneyIn(value float64, amount int) error {
 	}
 
 	d.BankCoins[pointer.index].Amount += amount
+	log.Debugf("BankCoins: %v", d.BankCoins)
 	return nil
 }
 
 func (d *desk) TransferMoneyOut(value float64, amount int) error {
+	d.Lock()
+	defer d.Unlock()
+
 	pointer, ok := valueMapToIndex[value]
 	if !ok {
 		return fmt.Errorf("no bank/coin of %v", value)
@@ -168,11 +179,15 @@ func (d *desk) TransferMoneyOut(value float64, amount int) error {
 		return fmt.Errorf("current amount of bank/coin of %v is not enough", value)
 	}
 	d.BankCoins[pointer.index].Amount -= amount
+	log.Debugf("BankCoins: %v", d.BankCoins)
 	return nil
 }
 
 func (d *desk) BackUpData() error {
-	file, err := os.OpenFile(dataPath, os.O_WRONLY|os.O_CREATE, 0755)
+	d.Lock()
+	defer d.Unlock()
+	os.Create(dataPath)
+	file, err := os.Create(dataPath)
 	if err != nil {
 		panic(err)
 	}
