@@ -1,1 +1,3 @@
 # go-qchang
+
+Cashier system
