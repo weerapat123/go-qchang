@@ -8,7 +8,6 @@ import (
 	"math"
 	"os"
 	"strconv"
-	"sync"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -18,13 +17,13 @@ type CashierDesk interface {
 	TransferMoneyOut(value float64, amount int) error
 	CalculateChange(change float64) ([]models.CashValue, error)
 	GetTotalBankCoin() []models.CashValue
+	ResetBankCoin()
 	BackUpData() error
 }
 
 const DefaultDataPath string = "assets/bankcoins.csv"
 
 type desk struct {
-	sync.Mutex
 	dataPath  string
 	BankCoins []models.CashValue
 }
@@ -186,10 +185,13 @@ func (d *desk) GetTotalBankCoin() []models.CashValue {
 	return tmpBankCoins
 }
 
-func (d *desk) BackUpData() error {
-	d.Lock()
-	defer d.Unlock()
+func (d *desk) ResetBankCoin() {
+	for i := range d.BankCoins {
+		d.BankCoins[i].Amount = 0
+	}
+}
 
+func (d *desk) BackUpData() error {
 	file, err := os.Create(d.dataPath)
 	if err != nil {
 		return err

@@ -1,13 +1,13 @@
 package batch
 
 import (
-	"go-qchang/datasource"
+	"go-qchang/services"
 
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 )
 
-func New(desk datasource.CashierDesk) {
+func Start(svc services.CashierService) {
 	c := cron.New()
 	c.AddFunc("@every 5m", func() {
 		defer func() {
@@ -18,7 +18,7 @@ func New(desk datasource.CashierDesk) {
 
 		log.Infof("[Backup] Every 5 minute job")
 
-		if err := desk.BackUpData(); err != nil {
+		if err := svc.BackUpData(); err != nil {
 			log.Errorf("job backup data failed, got error %v", err)
 		}
 	})

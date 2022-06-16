@@ -13,6 +13,7 @@ type CashierHandler interface {
 	TransferMoneyIn(c echo.Context) error
 	TransferMoneyOut(c echo.Context) error
 	Check(c echo.Context) error
+	Reset(c echo.Context) error
 }
 
 type cashierHandler struct {
@@ -96,5 +97,12 @@ func (h *cashierHandler) Check(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"data": res,
+	})
+}
+
+func (h *cashierHandler) Reset(c echo.Context) error {
+	h.svc.ResetBankCoin()
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "System is successfully reset.",
 	})
 }

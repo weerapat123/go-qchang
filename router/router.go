@@ -20,14 +20,14 @@ func New() *echo.Echo {
 	desk := datasource.New(datasource.DefaultDataPath)
 	service := services.NewCashierService(desk)
 	handler := handlers.NewCashierHandler(service)
-	batch.New(desk)
+	batch.Start(service)
 
-	// e.Use(middleware.Logger())
+	e.Use(middleware.Logger())
 	e.Use(middleware.Secure())
-	// e.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
-	// 	c.Logger().Debugf("request: %s", reqBody)
-	// 	c.Logger().Debugf("response: %s", resBody)
-	// }))
+	e.Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
+		c.Logger().Debugf("request: %s", reqBody)
+		c.Logger().Debugf("response: %s", resBody)
+	}))
 	e.Use(middleware.Recover())
 
 	e.GET("/ping", func(c echo.Context) error {
@@ -40,6 +40,7 @@ func New() *echo.Echo {
 	e.POST("/cashier/transfer_in", handler.TransferMoneyIn)
 	e.POST("/cashier/transfer_out", handler.TransferMoneyOut)
 	e.GET("/cashier/check", handler.Check)
+	e.POST("/cashier/reset", handler.Reset)
 
 	return e
 }

@@ -16,6 +16,8 @@ type CashierService interface {
 	ChangeMoney(ctx context.Context, req models.ChangeMoneyRequest) (models.ChangeMoneyResponse, bool, error)
 	TransferMoneyOut(ctx context.Context, req models.TransferMoneyRequest) error
 	Check(ctx context.Context) models.CheckResponse
+	ResetBankCoin()
+	BackUpData() error
 }
 
 type cashierService struct {
@@ -116,4 +118,15 @@ func (s *cashierService) Check(ctx context.Context) models.CheckResponse {
 		Total:     total,
 		BankCoins: bankcoins,
 	}
+}
+
+func (s *cashierService) ResetBankCoin() {
+	s.desk.ResetBankCoin()
+}
+
+func (s *cashierService) BackUpData() error {
+	s.Lock()
+	defer s.Unlock()
+
+	return s.desk.BackUpData()
 }
