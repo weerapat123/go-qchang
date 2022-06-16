@@ -17,7 +17,7 @@ func New() *echo.Echo {
 
 	e.Logger.SetLevel(log.DEBUG)
 
-	desk := datasource.New()
+	desk := datasource.New(datasource.DefaultDataPath)
 	service := services.NewCashierService(desk)
 	handler := handlers.NewCashierHandler(service)
 	batch.New(desk)
@@ -39,6 +39,7 @@ func New() *echo.Echo {
 	e.POST("/cashier/make_change", handler.ChangeMoney)
 	e.POST("/cashier/transfer_in", handler.TransferMoneyIn)
 	e.POST("/cashier/transfer_out", handler.TransferMoneyOut)
+	e.GET("/cashier/check", handler.Check)
 
 	return e
 }

@@ -12,6 +12,7 @@ type CashierHandler interface {
 	ChangeMoney(e echo.Context) error
 	TransferMoneyIn(c echo.Context) error
 	TransferMoneyOut(c echo.Context) error
+	Check(c echo.Context) error
 }
 
 type cashierHandler struct {
@@ -32,14 +33,22 @@ func (h *cashierHandler) ChangeMoney(c echo.Context) error {
 		})
 	}
 
-	changes, err := h.svc.ChangeMoney(c.Request().Context(), req)
+	changes, isChanged, err := h.svc.ChangeMoney(c.Request().Context(), req)
 	if err != nil {
+		if isChanged {
+			return c.JSON(http.StatusOK, echo.Map{
+				"message": err.Error(),
+				"data":    changes,
+			})
+		}
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": "No change available",
+			"message": err.Error(),
 		})
 	}
 
-	return c.JSON(http.StatusOK, changes)
+	return c.JSON(http.StatusOK, echo.Map{
+		"data": changes,
+	})
 }
 
 func (h *cashierHandler) TransferMoneyIn(c echo.Context) error {
@@ -53,12 +62,12 @@ func (h *cashierHandler) TransferMoneyIn(c echo.Context) error {
 	err := h.svc.TransferMoneyIn(c.Request().Context(), req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": "Transfer money in failed",
+			"message": err.Error(),
 		})
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"message": "Transfer money in successfully",
+		"message": "Transfer money in successfully.",
 	})
 }
 
@@ -73,11 +82,19 @@ func (h *cashierHandler) TransferMoneyOut(c echo.Context) error {
 	err := h.svc.TransferMoneyOut(c.Request().Context(), req)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": "Transfer money out failed",
+			"message": err.Error(),
 		})
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"message": "Transfer money out successfully",
+		"message": "Transfer money out successfully.",
+	})
+}
+
+func (h *cashierHandler) Check(c echo.Context) error {
+	res := h.svc.Check(c.Request().Context())
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"data": res,
 	})
 }

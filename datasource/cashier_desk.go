@@ -15,15 +15,17 @@ import (
 
 type CashierDesk interface {
 	TransferMoneyIn(value float64, amount int) error
-	CalculateChange(change float64) ([]models.CashValue, error)
 	TransferMoneyOut(value float64, amount int) error
+	CalculateChange(change float64) ([]models.CashValue, error)
+	GetTotalBankCoin() []models.CashValue
 	BackUpData() error
 }
 
-const dataPath string = "assets/bankcoins.csv"
+const DefaultDataPath string = "assets/bankcoins.csv"
 
 type desk struct {
 	sync.Mutex
+	dataPath  string
 	BankCoins []models.CashValue
 }
 
@@ -44,9 +46,11 @@ var valueMapToIndex = map[float64]cashPointer{
 	0.25: {8, 50},
 }
 
-func New() CashierDesk {
-	d := &desk{}
-	d.loadData()
+func New(path string) CashierDesk {
+	d := &desk{dataPath: path}
+	if err := d.loadData(); err != nil {
+		panic(err)
+	}
 
 	if !d.isDataValid() {
 		panic("data is corrupted")
@@ -54,18 +58,21 @@ func New() CashierDesk {
 	return d
 }
 
-func (d *desk) loadData() {
+func (d *desk) loadData() error {
 	bankCoinsDefault := make([]models.CashValue, 0, len(valueMapToIndex))
 
-	file, err := os.Open(dataPath)
+	file, err := os.Open(d.dataPath)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer file.Close()
 
 	csvReader := csv.NewReader(file)
 	// Header
-	csvReader.Read()
+	_, err = csvReader.Read()
+	if err != nil {
+		return err
+	}
 
 	for {
 		record, err := csvReader.Read()
@@ -73,22 +80,23 @@ func (d *desk) loadData() {
 			if err == io.EOF {
 				break
 			}
-			panic(err)
+			return err
 		}
 
 		if len(record) == 2 {
 			value, err := strconv.ParseFloat(record[0], 64)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			amount, err := strconv.Atoi(record[1])
 			if err != nil {
-				panic(err)
+				return err
 			}
 			bankCoinsDefault = append(bankCoinsDefault, models.CashValue{value, amount})
 		}
 	}
 	d.BankCoins = bankCoinsDefault
+	return nil
 }
 
 func (d *desk) isDataValid() bool {
@@ -109,9 +117,6 @@ func (d *desk) isDataValid() bool {
 }
 
 func (d *desk) CalculateChange(change float64) ([]models.CashValue, error) {
-	d.Lock()
-	defer d.Unlock()
-
 	tmpBankCoins := make([]models.CashValue, len(d.BankCoins))
 	copy(tmpBankCoins, d.BankCoins)
 
@@ -139,56 +144,55 @@ func (d *desk) CalculateChange(change float64) ([]models.CashValue, error) {
 	}
 
 	if remaining != 0 {
-		return nil, fmt.Errorf("no change available")
+		return nil, fmt.Errorf("No change available")
 	}
 
 	d.BankCoins = tmpBankCoins
-	log.Debugf("BankCoins: %v", d.BankCoins)
 	return changes, nil
 }
 
 func (d *desk) TransferMoneyIn(value float64, amount int) error {
-	d.Lock()
-	defer d.Unlock()
-
 	pointer, ok := valueMapToIndex[value]
 	if !ok {
-		return fmt.Errorf("no bank/coin of %v", value)
+		return fmt.Errorf("Invalid value")
 	}
 
 	if (d.BankCoins[pointer.index].Amount + amount) > pointer.limit {
-		return fmt.Errorf("amount bank/coin of %v is at limit", value)
+		return fmt.Errorf("Bank/coin of %v is at limit", value)
 	}
 
 	d.BankCoins[pointer.index].Amount += amount
-	log.Debugf("BankCoins: %v", d.BankCoins)
 	return nil
 }
 
 func (d *desk) TransferMoneyOut(value float64, amount int) error {
-	d.Lock()
-	defer d.Unlock()
-
 	pointer, ok := valueMapToIndex[value]
 	if !ok {
-		return fmt.Errorf("no bank/coin of %v", value)
+		return fmt.Errorf("Invalid value")
 	}
 
 	if (d.BankCoins[pointer.index].Amount - amount) < 0 {
-		return fmt.Errorf("current amount of bank/coin of %v is not enough", value)
+		return fmt.Errorf("Bank/coin of %v is not enough", value)
 	}
+
 	d.BankCoins[pointer.index].Amount -= amount
-	log.Debugf("BankCoins: %v", d.BankCoins)
 	return nil
+}
+
+func (d *desk) GetTotalBankCoin() []models.CashValue {
+	tmpBankCoins := make([]models.CashValue, len(d.BankCoins))
+	copy(tmpBankCoins, d.BankCoins)
+
+	return tmpBankCoins
 }
 
 func (d *desk) BackUpData() error {
 	d.Lock()
 	defer d.Unlock()
-	os.Create(dataPath)
-	file, err := os.Create(dataPath)
+
+	file, err := os.Create(d.dataPath)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer file.Close()
 
